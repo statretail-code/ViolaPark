@@ -12,8 +12,8 @@
    (Supabase > Project Settings > API)                       */
 </style>
 <script>
-const SUPABASE_URL = 'https://upvcoghawurladmrzzyj.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_-RWGphzdNgiEue7Ev_XkgA_IajLftAv';
+const SUPABASE_URL = 'https://XXXXXXXX.supabase.co';
+const SUPABASE_KEY = 'INCOLLA-QUI-LA-CHIAVE-ANON';
 </script>
 <style>
 :root{
@@ -266,9 +266,11 @@ function logout(){
 }
 async function rpc(fn, args={}, retry=true){
   if(sess && Date.now() > sess.expires_at - 60000){ try{ await refresh(); }catch(e){ logout(); throw e; } }
-  const r = await fetch(`${BASE}/rest/v1/rpc/${fn}`, {method:'POST',
-    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+(sess?.access_token||SUPABASE_KEY),'Content-Type':'application/json'},
-    body:JSON.stringify(args)});
+  // chiave nuova (sb_publishable_...) solo in "apikey": in Authorization va solo il JWT dell'utente
+  const h={'apikey':SUPABASE_KEY,'Content-Type':'application/json'};
+  if(sess?.access_token) h.Authorization='Bearer '+sess.access_token;
+  else if(SUPABASE_KEY.startsWith('eyJ')) h.Authorization='Bearer '+SUPABASE_KEY;
+  const r = await fetch(`${BASE}/rest/v1/rpc/${fn}`, {method:'POST', headers:h, body:JSON.stringify(args)});
   if(r.status===401 && retry){ try{ await refresh(); return rpc(fn,args,false); }catch(e){ logout(); throw e; } }
   const j = await r.json().catch(()=>null);
   if(!r.ok) throw new Error(j?.message || ('Errore '+r.status));
