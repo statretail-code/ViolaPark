@@ -12,8 +12,8 @@
    (Supabase > Project Settings > API)                       */
 </style>
 <script>
-const SUPABASE_URL = 'https://upvcoghawurladmrzzyj.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_-RWGphzdNgiEue7Ev_XkgA_IajLftAv';
+const SUPABASE_URL = 'https://XXXXXXXX.supabase.co';
+const SUPABASE_KEY = 'INCOLLA-QUI-LA-CHIAVE-ANON';
 </script>
 <style>
 :root{
@@ -98,12 +98,20 @@ main{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .pv tfoot td{font-weight:700;border-top:2px solid var(--ink-2);background:var(--surface-2);position:sticky;bottom:0}
 .pv tfoot td:first-child{background:var(--surface-2);z-index:2}
 .paycard .val{font-size:22px}
+.neg{color:var(--bad)}
+.tag.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.tag.nc{background:var(--bad-bg);color:var(--bad);border-color:transparent}
+.ft-row{cursor:pointer}
+.ft-det td{background:var(--surface-2);padding:10px 14px}
+.ft-det table td{background:transparent;padding:4px 8px}
 .paycard .bar{height:6px;border-radius:3px;background:var(--surface-2);margin-top:10px;overflow:hidden}
 .paycard .bar span{display:block;height:100%;background:var(--series-1);border-radius:0 3px 3px 0}
 
 /* card */
 .grid{display:grid;gap:14px}
 .g-kpi{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.g-kpi.k7{grid-template-columns:repeat(auto-fit,minmax(148px,1fr))}
+.g-kpi.k7 .kpi .val{font-size:21px}
 .g-2{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow);min-width:0}
 .card h3{margin:0 0 2px;font-size:14px;font-weight:600}
@@ -221,6 +229,7 @@ code.copy:hover{border-color:var(--brand)}
       <button data-tab="articoli">Articoli</button>
       <button data-tab="pagamenti">Pagamenti</button>
       <button data-tab="chiusure">Chiusure Z</button>
+      <button data-tab="fatture">Fatture</button>
       <button data-tab="scontrini">Scontrini</button>
       <button data-tab="admin" id="tabAdmin" class="hidden">Amministrazione</button>
     </nav>
@@ -452,6 +461,7 @@ async function carica(){
   try{
     if(S.tab==='admin'){ await vistaAdmin(); }
     else if(S.tab==='scontrini'){ await vistaScontrini(my); }
+    else if(S.tab==='fatture'){ await vistaFatture(my); }
     else if(S.tab==='pagamenti'){
       const pg = await rpc('pagamenti',{p_negozio:S.negozio,p_postazioni:[...S.post],p_dal:S.dal,p_al:S.al});
       if(my!==reqN) return; S.pag=pg; vistaPagamenti(pg);
@@ -547,20 +557,27 @@ function vistaPanoramica(st){
   const P=st.periodo, prevLbl = P.prec_dal===P.prec_al ? `vs ${pIso(P.prec_dal).toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'})}`
         : `vs ${fDataBreve(P.prec_dal)}–${fDataBreve(P.prec_al)}${String(P.prec_dal).slice(0,4)!==String(S.dal).slice(0,4)?' '+String(P.prec_al).slice(0,4):''}`;
   if(!k.scontrini){
-    v.innerHTML=`<div class="card empty">Nessuno scontrino nel periodo selezionato.<br><span class="muted">Periodo di confronto: ${fEur(p.incasso)} · ${fNum(p.scontrini)} scontrini</span></div>`; return;
+    const Fx=st.fatture||{n:0};
+    v.innerHTML=`<div class="card empty">Nessuno scontrino nel periodo selezionato.<br><span class="muted">Periodo di confronto: ${fEur(p.incasso)} · ${fNum(p.scontrini)} scontrini</span>${Fx.n?`<br><br><b>${fNum(Fx.n)} fatture per ${fEur(Fx.totale)}</b> — <a href="#" onclick="attivaTab('fatture');return false">vedi Fatture</a>`:''}</div>`; return;
   }
   const and=raggruppaAndamento(st.giorni);
   const totRep=st.reparti.reduce((a,b)=>a+(+b.importo),0);
   const settimana=[1,2,3,4,5,6,7].map(d=>{ const o=st.settimana.find(x=>x.dow===d); return {x:GIORNI[d].slice(0,3), v:o&&o.giorni?o.incasso/o.giorni:0, t:GIORNI[d], extra:o?`media su ${o.giorni} giorni · ${fNum(o.scontrini)} scontrini`:'nessun dato'}; });
   const oreMin=Math.min(...st.ore.map(o=>o.h)), oreMax=Math.max(...st.ore.map(o=>o.h));
   const ore=[]; for(let h=oreMin;h<=oreMax;h++){ const o=st.ore.find(x=>x.h===h); ore.push({x:String(h).padStart(2,'0'), v:o?+o.incasso:0, t:`${String(h).padStart(2,'0')}:00 – ${String(h).padStart(2,'0')}:59`, extra:o?`${fNum(o.scontrini)} scontrini`:''}); }
+  const F=st.fatture||{n:0,totale:0,da_scontrino:0}, FP=st.fatture_prec||{n:0,totale:0};
+  const conFatture = F.n>0 || FP.n>0 || F.da_scontrino>0;
+  const cardFatture = !conFatture ? '' : `
+    <div class="card kpi"><div class="lbl">Fatture</div><div class="val num">${fEur(F.totale)}</div><div class="cmp">${delta(F.totale,FP.totale)}<span>${fNum(F.n)} fatture${F.da_scontrino?` · ${F.da_scontrino} da scontrino escluse`:''}</span></div></div>
+    <div class="card kpi"><div class="lbl">Scontrini + fatture</div><div class="val num">${fEur(+k.incasso + +F.totale)}</div><div class="cmp">${delta(+k.incasso + +F.totale, +p.incasso + +FP.totale)}<span>${prevLbl}</span></div></div>`;
   v.innerHTML=`
-  <div class="grid g-kpi">
-    <div class="card kpi"><div class="lbl">Incasso</div><div class="val num">${fEur(k.incasso)}</div><div class="cmp">${delta(k.incasso,p.incasso)}<span title="${fEur(p.incasso)}">${prevLbl}</span></div></div>
+  <div class="grid g-kpi ${conFatture?'k7':''}">
+    <div class="card kpi"><div class="lbl">${conFatture?'Incasso scontrini':'Incasso'}</div><div class="val num">${fEur(k.incasso)}</div><div class="cmp">${delta(k.incasso,p.incasso)}<span title="${fEur(p.incasso)}">${prevLbl}</span></div></div>
     <div class="card kpi"><div class="lbl">Scontrini</div><div class="val num">${fNum(k.scontrini)}</div><div class="cmp">${delta(k.scontrini,p.scontrini)}<span>${fNum(p.scontrini)} prima</span></div></div>
     <div class="card kpi"><div class="lbl">Scontrino medio</div><div class="val num">${fEur(k.medio)}</div><div class="cmp">${delta(k.medio,p.medio)}<span>${fEur(p.medio)} prima</span></div></div>
     <div class="card kpi"><div class="lbl">Pezzi venduti</div><div class="val num">${fQta(k.pezzi)}</div><div class="cmp">${delta(k.pezzi,p.pezzi)}<span>${fQta(p.pezzi)} prima</span></div></div>
     <div class="card kpi"><div class="lbl">Sconti</div><div class="val num">${fEur(Math.abs(k.sconti))}</div><div class="cmp"><span>${k.lordo?fPct(Math.abs(k.sconti)/k.lordo):'0%'} del venduto lordo</span></div></div>
+    ${cardFatture}
   </div>
   <div class="section-gap"></div>
   ${st.giorni.length>1?`<div class="card"><div class="card-head"><div><h3>${and.titolo}</h3><div class="sub">${fNum(k.giorni_aperti)} giorni con vendite · media ${fEur(k.incasso/Math.max(1,k.giorni_aperti))} al giorno</div></div></div><div id="chAnd"></div></div><div class="section-gap"></div>`:''}
@@ -662,6 +679,64 @@ async function vistaScontrini(my){
 }
 
 /* ====================================================================
+   Vista: Fatture
+   ==================================================================== */
+function analisiFatture(l){
+  const valide=l.filter(f=>!f.in_scontrini), sg=f=>f.segno||1;
+  const somma=(arr,k)=>arr.reduce((a,f)=>a+sg(f)*(+f[k]),0);
+  const nc=valide.filter(f=>sg(f)<0);
+  // riepilogo IVA dalle righe; differenza con le testate = sconti/spese a piede
+  const iva=new Map();
+  valide.forEach(f=>(f.righe||[]).forEach(r=>{ const k=+r.aliquota||0; const o=iva.get(k)||{aliquota:k,imponibile:0,totale:0}; o.imponibile+=sg(f)*(+r.imponibile); o.totale+=sg(f)*(+r.totale); iva.set(k,o); }));
+  const ivaL=[...iva.values()].sort((a,b)=>a.aliquota-b.aliquota).map(o=>({...o,imposta:o.totale-o.imponibile}));
+  const diffTot=somma(valide,'totale')-ivaL.reduce((a,b)=>a+b.totale,0), diffImp=somma(valide,'imponibile')-ivaL.reduce((a,b)=>a+b.imponibile,0);
+  if(Math.abs(diffTot)>=0.005) ivaL.push({aliquota:null,imponibile:diffImp,totale:diffTot,imposta:diffTot-diffImp});
+  const cli=new Map();
+  valide.forEach(f=>{ const k=f.cliente||'(senza cliente)'; const o=cli.get(k)||{cliente:k,piva:f.piva||f.cf||'',n:0,totale:0}; o.n++; o.totale+=sg(f)*(+f.totale); cli.set(k,o); });
+  return {valide, nc, tot:somma(valide,'totale'), imp:somma(valide,'imponibile'), iva:somma(valide,'iva'),
+          ncTot:nc.reduce((a,f)=>a+(+f.totale),0), daSc:l.filter(f=>f.in_scontrini), ivaL, clienti:[...cli.values()].sort((a,b)=>b.totale-a.totale)};
+}
+async function vistaFatture(my){
+  const v=$('view'); window.onresize=null;
+  if(!$('ftBody')){
+    v.innerHTML=`<div id="ftKpi"></div><div class="card"><div class="toolbar"><input type="search" id="ftQ" placeholder="Cerca cliente, P.IVA, numero o articolo…" value="${esc(S.ftQ||'')}">
+      <button class="btn sm pri" id="ftGo">Cerca</button><span class="muted" id="ftN"></span></div><div class="tbl-wrap" id="ftBody"></div></div><div id="ftExtra"></div>`;
+    const go=()=>{ S.ftQ=$('ftQ').value.trim(); carica(); };
+    $('ftGo').onclick=go; $('ftQ').onkeydown=e=>{ if(e.key==='Enter') go(); };
+  }
+  const l=await rpc('fatture_lista',{p_negozio:S.negozio,p_postazioni:[...S.post],p_dal:S.dal,p_al:S.al,p_cerca:S.ftQ||null});
+  if(my!==reqN) return;
+  S.ftList=l; const A=analisiFatture(l);
+  $('ftKpi').innerHTML = l.length ? `<div class="grid g-kpi">
+    <div class="card kpi"><div class="lbl">Totale fatture</div><div class="val num">${fEur(A.tot)}</div><div class="cmp"><span>${fNum(A.valide.length-A.nc.length)} fatture${A.nc.length?` · ${A.nc.length} note di credito`:''}</span></div></div>
+    <div class="card kpi"><div class="lbl">Imponibile</div><div class="val num">${fEur(A.imp)}</div></div>
+    <div class="card kpi"><div class="lbl">IVA</div><div class="val num">${fEur(A.iva)}</div></div>
+    ${A.nc.length?`<div class="card kpi"><div class="lbl">Note di credito</div><div class="val num neg">−${fEur(A.ncTot)}</div><div class="cmp"><span>già sottratte dal totale</span></div></div>`:''}
+    ${A.daSc.length?`<div class="card kpi"><div class="lbl">Fatture da scontrino</div><div class="val num">${fEur(A.daSc.reduce((a,f)=>a+ +f.totale,0))}</div><div class="cmp"><span>${A.daSc.length} · già negli scontrini, non sommate</span></div></div>`:''}
+  </div><div class="section-gap"></div>` : '';
+  $('ftN').textContent=`${fNum(l.length)} documenti`;
+  $('ftBody').innerHTML = l.length ? `<table><thead><tr><th>Data</th><th>Numero</th><th>Tipo</th><th>Cliente</th><th>P.IVA / C.F.</th><th>Pagamento</th><th class="r">Imponibile</th><th class="r">IVA</th><th class="r">Totale</th></tr></thead><tbody>
+    ${l.map((f,i)=>{ const neg=(f.segno||1)<0;
+      const tag = f.in_scontrini?'<span class="tag warn" title="Importo già compreso negli scontrini: non sommato">da scontrino</span>':neg?'<span class="tag nc">nota di credito</span>':'';
+      return `<tr class="ft-row" data-i="${i}"><td>${fData(f.giorno)} <span class="muted">${fOra(f.dataora)}</span></td><td><b>${esc(f.numero||'')}</b>${f.anno?`<span class="muted">/${f.anno}</span>`:''}</td>
+        <td>${esc(f.tipo||'')} ${tag}</td><td>${esc(f.cliente||'')}${f.citta?`<div class="muted" style="font-size:11px">${esc(f.citta)}</div>`:''}</td><td class="muted">${esc(f.piva||f.cf||'')}</td>
+        <td>${esc(f.pagamento||f.condizioni||'')}${f.pagamento&&f.condizioni&&f.condizioni!==f.pagamento?`<div class="muted" style="font-size:11px">${esc(f.condizioni)}</div>`:''}</td>
+        <td class="r ${neg?'neg':''}">${neg?'−':''}${fEur(f.imponibile)}</td><td class="r ${neg?'neg':''}">${neg?'−':''}${fEur(f.iva)}</td><td class="r ${neg?'neg':''}"><b>${neg?'−':''}${fEur(f.totale)}</b></td></tr>
+      <tr class="ft-det hidden" id="ftd${i}"><td colspan="9"><table><thead><tr><th>Articolo</th><th>Reparto</th><th class="r">Q.tà</th><th class="r">Prezzo</th><th class="r">IVA</th><th class="r">Imponibile</th><th class="r">Totale</th></tr></thead><tbody>
+        ${(f.righe||[]).map(r=>`<tr><td>${esc(r.articolo||'')}<span class="muted" style="font-size:11px"> ${esc(r.cod||'')}</span></td><td class="muted">${esc(r.reparto||'')}</td><td class="r">${fQta(r.quantita)}</td><td class="r">${fEur(r.prezzo)}</td><td class="r">${r.aliquota!=null?fNum(r.aliquota,0)+'%':''}</td><td class="r">${fEur(r.imponibile)}</td><td class="r">${fEur(r.totale)}</td></tr>`).join('')}
+        </tbody></table><div class="muted" style="font-size:12px;margin-top:6px">${[f.postazione&&'Postazione '+esc(f.postazione), f.operatore&&'Operatore '+esc(f.operatore), f.protocollo&&'Protocollo '+f.protocollo, f.rifrt&&'Rif. RT '+esc(f.rifrt)].filter(Boolean).join(' · ')}</div></td></tr>`; }).join('')}
+    </tbody><tfoot><tr><td colspan="6"><b>Totale (escluse fatture da scontrino)</b></td><td class="r"><b>${fEur(A.imp)}</b></td><td class="r"><b>${fEur(A.iva)}</b></td><td class="r"><b>${fEur(A.tot)}</b></td></tr></tfoot></table>`
+    : '<div class="empty">Nessuna fattura nel periodo selezionato</div>';
+  $('ftBody').querySelectorAll('.ft-row').forEach(r=>r.onclick=()=>$('ftd'+r.dataset.i).classList.toggle('hidden'));
+  $('ftExtra').innerHTML = A.valide.length ? `<div class="section-gap"></div><div class="grid g-2">
+    <div class="card"><h3>Riepilogo IVA</h3><div class="sub">Dalle righe delle fatture, al netto delle note di credito</div><table><thead><tr><th>Aliquota</th><th class="r">Imponibile</th><th class="r">Imposta</th><th class="r">Totale</th></tr></thead><tbody>
+      ${A.ivaL.map(o=>`<tr><td>${o.aliquota==null?'Sconti / spese a piede':fNum(o.aliquota,0)+'%'}</td><td class="r">${fEur(o.imponibile)}</td><td class="r">${fEur(o.imposta)}</td><td class="r">${fEur(o.totale)}</td></tr>`).join('')}
+      <tr><td><b>Totale</b></td><td class="r"><b>${fEur(A.imp)}</b></td><td class="r"><b>${fEur(A.iva)}</b></td><td class="r"><b>${fEur(A.tot)}</b></td></tr></tbody></table></div>
+    <div class="card"><h3>Clienti</h3><div class="sub">Fatturato per cliente nel periodo</div>${hbars(A.clienti.slice(0,15),{lbl:o=>`${o.cliente} (${o.n})`,val:o=>o.totale})}</div>
+  </div>` : '';
+}
+
+/* ====================================================================
    Vista: Pagamenti
    ==================================================================== */
 function pivot(lista, chiave, ordinePag){
@@ -741,6 +816,10 @@ function reportCorrente(){
         ['Pezzi venduti',{v:k.pezzi,tipo:'dec'},{v:p.pezzi,tipo:'dec'},vr(k.pezzi,p.pezzi)],
         ['Venduto lordo',k.lordo,null,null],['Sconti',Math.abs(k.sconti),null,null],['Venduto netto',k.netto,p.netto,vr(k.netto,p.netto)],
         ['Giorni con vendite',{v:k.giorni_aperti,tipo:'int'},null,null],
+        ...((st.fatture&&(st.fatture.n||st.fatture_prec?.n))?[
+          ['Fatture (n.)',{v:st.fatture.n,tipo:'int'},{v:st.fatture_prec.n,tipo:'int'},vr(st.fatture.n,st.fatture_prec.n)],
+          ['Fatture (totale)',+st.fatture.totale,+st.fatture_prec.totale,vr(+st.fatture.totale,+st.fatture_prec.totale)],
+          ['Totale scontrini + fatture',+k.incasso + +st.fatture.totale,+p.incasso + +st.fatture_prec.totale,vr(+k.incasso + +st.fatture.totale,+p.incasso + +st.fatture_prec.totale)]]:[]),
         ['Periodo di confronto',{v:`${fData(st.periodo.prec_dal)} – ${fData(st.periodo.prec_al)}`,tipo:'testo'},null,null]]},
       ...(st.giorni.length>1?[{nome:and.titolo, grafico:{dati:and.dati}}]:[]),
       {nome:'Andamento giornaliero', colonne:[C('Data','data'),C('Scontrini','int',true),C('Incasso','eur',true)],
@@ -789,6 +868,23 @@ function reportCorrente(){
       sezPivot('Per fascia oraria',[C('Ora')],D.ore,D.paga,r=>[String(r.k).padStart(2,'0')+':00']),
       ...(D.pos.length>1?[sezPivot('Per postazione',[C('Postazione')],D.pos,D.paga,r=>[r.k])]:[]),
       ...(D.op.length>1?[sezPivot('Per operatore',[C('Operatore')],D.op,D.paga,r=>[r.k])]:[])
+    ];
+    return r;
+  }
+  if(t==='fatture'){
+    const l=S.ftList||[], A=analisiFatture(l), r=infoReport('Fatture','fatture');
+    if(S.ftQ) r.sottotitolo+=` · ricerca: "${S.ftQ}"`;
+    const sgn=f=>(f.in_scontrini?0:(f.segno||1));
+    r.sezioni=[
+      {nome:'Fatture', colonne:[C('Data','data'),C('Numero'),C('Tipo'),C('Cliente'),C('P.IVA / C.F.'),C('Pagamento'),C('Imponibile','eur'),C('IVA','eur'),C('Totale','eur'),C('Nei totali')],
+        righe:l.map(f=>{ const s=(f.segno||1); return [f.giorno, (f.numero||'')+(f.anno?'/'+f.anno:''), f.tipo, f.cliente, f.piva||f.cf, f.pagamento||f.condizioni, s*f.imponibile, s*f.iva, s*f.totale, f.in_scontrini?'No (da scontrino)':'Sì']; }),
+        totale:['Totale',{v:`${l.length} documenti`,tipo:'testo'},'','','','',A.imp,A.iva,A.tot,'']},
+      {nome:'Righe fatture', colonne:[C('Data','data'),C('Numero'),C('Cliente'),C('Articolo'),C('Reparto'),C('Quantità','dec'),C('Prezzo','eur'),C('Aliquota'),C('Imponibile','eur'),C('Totale','eur')],
+        righe:l.flatMap(f=>(f.righe||[]).map(x=>[f.giorno,(f.numero||'')+(f.anno?'/'+f.anno:''),f.cliente,x.articolo,x.reparto,+x.quantita,+x.prezzo,x.aliquota!=null?fNum(x.aliquota,0)+'%':'',(f.segno||1)*x.imponibile,(f.segno||1)*x.totale]))},
+      {nome:'Riepilogo IVA', colonne:[C('Aliquota'),C('Imponibile','eur',true),C('Imposta','eur',true),C('Totale','eur',true)],
+        righe:A.ivaL.map(o=>[o.aliquota==null?'Sconti / spese a piede':fNum(o.aliquota,0)+'%',o.imponibile,o.imposta,o.totale]), totale:['Totale',A.imp,A.iva,A.tot]},
+      {nome:'Clienti', colonne:[C('Cliente'),C('P.IVA / C.F.'),C('Fatture','int',true),C('Totale','eur',true)],
+        righe:A.clienti.map(o=>[o.cliente,o.piva,o.n,o.totale]), totale:['Totale','',A.clienti.reduce((a,b)=>a+b.n,0),A.tot]}
     ];
     return r;
   }
@@ -964,7 +1060,7 @@ ${['0','164','3','168','165','166','167'].map(f=>`<xf numFmtId="${f}" fontId="4"
     if(c.f) return `<c r="${ref}" s="${base}"><f>${xesc(c.f)}</f>${v!=null&&v!==''&&isFinite(Number(v))?`<v>${Number(v)}</v>`:''}</c>`;
     if(v==null||v==='') return tot?`<c r="${ref}" s="${base}"/>`:'';
     const testo=()=>`<c r="${ref}" s="${(tot?11:4)}" t="inlineStr"><is><t xml:space="preserve">${xesc(v)}</t></is></c>`;
-    if(isNum(c.tipo)){ const n=typeof v==='number'?v:Number(v); return isFinite(n)?`<c r="${ref}" s="${base}"><v>${n}</v></c>`:testo(); }
+    if(isNum(c.tipo)){ let n=typeof v==='number'?v:Number(v); if(c.tipo==='eur'&&isFinite(n)) n=Math.round(n*100)/100; return isFinite(n)?`<c r="${ref}" s="${base}"><v>${n}</v></c>`:testo(); }
     if(c.tipo==='data'||c.tipo==='dataora'){ if(!/^\d{4}-\d{2}-\d{2}/.test(String(v))) return testo(); const n=serial(v); return isFinite(n)?`<c r="${ref}" s="${base}"><v>${n}</v></c>`:testo(); }
     return testo();
   }
@@ -1060,10 +1156,18 @@ ${['0','164','3','168','165','166','167'].map(f=>`<xf numFmtId="${f}" fontId="4"
       // larghezze: contenuto (campione) + intestazione, scalate sulla pagina
       let w=cols.map((c,j)=>Math.max(tw(toAnsi(c.t),FS,true), ...body.slice(0,400).map(r=>tw(r[j],FS,false)), tot?tw(tot[j],FS,true):0)+12);
       w=w.map((x,j)=>cols[j].tipo==='testo'?Math.min(x,CW*0.45):x);
-      const sum=w.reduce((a,b)=>a+b,0);
-      if(sum>=CW) w=w.map(x=>x*CW/sum);
-      else { const tx=cols.map((c,j)=>c.tipo==='testo'?j:-1).filter(j=>j>=0), ex=CW-sum;
-             if(tx.length){ const st=tx.reduce((a,j)=>a+w[j],0); tx.forEach(j=>w[j]+=ex*w[j]/st); } else w=w.map(x=>x*CW/sum); }
+      // numeri e date tengono la loro larghezza; le colonne di testo si adattano allo spazio che resta
+      const tx=cols.map((c,j)=>c.tipo==='testo'?j:-1).filter(j=>j>=0);
+      const fissa=w.reduce((a,x,j)=>a+(tx.includes(j)?0:x),0), testo=tx.reduce((a,j)=>a+w[j],0), resto=CW-fissa;
+      if(tx.length && resto>=tx.length*40){
+        if(testo<=resto){ tx.forEach(j=>w[j]=w[j]*resto/testo); }
+        else { // le colonne corte restano intere, si stringono solo le lunghe
+          let lunghe=[...tx], disp=resto, cambiato=true;
+          while(cambiato && lunghe.length){ cambiato=false; const quota=disp/lunghe.length;
+            for(const j of [...lunghe]) if(w[j]<=quota){ disp-=w[j]; lunghe.splice(lunghe.indexOf(j),1); cambiato=true; } }
+          const tl=lunghe.reduce((a,j)=>a+w[j],0); lunghe.forEach(j=>w[j]=w[j]*disp/tl);
+        } }
+      else { const sum=w.reduce((a,b)=>a+b,0); w=w.map(x=>x*CW/sum); }
       const xs=[]; w.reduce((a,b,i)=>(xs[i]=a,a+b),M);
       const right=j=>isNum(cols[j].tipo);
       const intest=()=>{ RECT(M,y-HH,CW,HH,'#4F46E5');
