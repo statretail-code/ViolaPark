@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e1b4b">
+<title>Renko Retail · Statistiche</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Crect x='14' y='30' width='8' height='20' rx='2' fill='white'/%3E%3Crect x='28' y='16' width='8' height='34' rx='2' fill='white'/%3E%3Crect x='42' y='24' width='8' height='26' rx='2' fill='white'/%3E%3C/svg%3E">
+<style>
+/* ===================== CONFIGURAZIONE =====================
+   Inserisci qui URL e chiave anon del progetto Supabase
+   (Supabase > Project Settings > API)                       */
+</style>
+<script>
+const SUPABASE_URL = 'https://XXXXXXXX.supabase.co';
+const SUPABASE_KEY = 'INCOLLA-QUI-LA-CHIAVE-ANON';
+</script>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f5f8; --surface:#ffffff; --surface-2:#f8f9fb; --line:#e6e7eb; --grid:#eceef2;
+  --ink:#111318; --ink-2:#4b5060; --ink-3:#7c8191;
+  --brand:#4f46e5; --brand-ink:#ffffff; --head:#1e1b4b;
+  --series-1:#2a78d6; --series-1-soft:#cde2fb;
+  --good:#15803d; --good-bg:#ecfdf3; --bad:#b91c1c; --bad-bg:#fef2f2; --warn:#b45309; --warn-bg:#fffbeb;
+  --r:14px; --shadow:0 1px 2px rgba(16,24,40,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme:dark;
+    --bg:#121214; --surface:#1a1a19; --surface-2:#222221; --line:#2e2e2c; --grid:#2a2a28;
+    --ink:#f0efec; --ink-2:#c3c2b7; --ink-3:#8f8e86;
+    --head:#17153a; --series-1:#3987e5; --series-1-soft:#1c3555;
+    --good:#4ade80; --good-bg:#11291b; --bad:#f87171; --bad-bg:#2c1414; --warn:#fbbf24; --warn-bg:#2b230f;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:14px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+.hidden{display:none!important}
+.num{font-variant-numeric:tabular-nums}
+
+/* --- login --- */
+#login{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,#1e1b4b,#312e81)}
+.login-card{background:var(--surface);border-radius:18px;padding:32px;width:min(380px,100%);box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.login-card h1{margin:12px 0 4px;font-size:20px}
+.login-card p{margin:0 0 20px;color:var(--ink-3)}
+.logo{width:42px;height:42px;border-radius:11px;background:var(--brand);display:grid;place-items:center}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--ink-2);margin-bottom:5px;font-weight:500}
+input[type=text],input[type=email],input[type=password],input[type=date],input[type=search],input[type=number],select{
+  width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface);outline:none}
+input:focus,select:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 20%,transparent)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);font-weight:600}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn.danger{color:var(--bad)}
+.err{color:var(--bad);font-size:13px;min-height:18px;margin-top:8px}
+
+/* --- app shell --- */
+header.top{background:var(--head);color:#fff;padding:0 20px;position:sticky;top:0;z-index:20}
+.top-in{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:14px;height:56px}
+.top-in .logo{width:32px;height:32px;border-radius:8px}
+.brand{font-weight:600;font-size:15px}
+.brand small{display:block;font-weight:400;opacity:.65;font-size:11px}
+.sp{flex:1}
+header select{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2);width:auto;max-width:260px}
+header select option{color:#111}
+.user{font-size:12px;opacity:.8}
+header .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.25)}
+header .btn:hover{background:rgba(255,255,255,.1)}
+nav.tabs{max-width:1280px;margin:0 auto;display:flex;gap:4px;overflow-x:auto}
+nav.tabs button{background:none;border:0;color:rgba(255,255,255,.7);padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+nav.tabs button.on{color:#fff;border-bottom-color:#a5b4fc}
+main{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
+
+/* filtri: una riga sopra i grafici */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:none;padding:6px 11px;border-radius:7px;cursor:pointer;color:var(--ink-2)}
+.seg button.on{background:var(--brand);color:#fff}
+.range{display:flex;gap:6px;align-items:center}
+.range input{width:auto}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px;color:var(--ink-2)}
+.chip.on{border-color:var(--brand);color:var(--brand);background:color-mix(in srgb,var(--brand) 9%,var(--surface));font-weight:600}
+.period-lbl{color:var(--ink-3);font-size:13px;margin-left:auto}
+
+/* card */
+.grid{display:grid;gap:14px}
+.g-kpi{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.g-2{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow);min-width:0}
+.card h3{margin:0 0 2px;font-size:14px;font-weight:600}
+.card .sub{color:var(--ink-3);font-size:12px;margin-bottom:12px}
+.card-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.card-head>div:first-child{flex:1}
+.kpi .lbl{color:var(--ink-2);font-size:12px;font-weight:500}
+.kpi .val{font-size:26px;font-weight:650;letter-spacing:-.02em;margin:4px 0 2px}
+.kpi .cmp{font-size:12px;color:var(--ink-3);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.kpi .cmp .delta{white-space:nowrap}
+.delta{display:inline-flex;align-items:center;gap:3px;font-weight:600;padding:1px 6px;border-radius:6px}
+.delta.up{color:var(--good);background:var(--good-bg)}
+.delta.down{color:var(--bad);background:var(--bad-bg)}
+.delta.flat{color:var(--ink-2);background:var(--surface-2)}
+.section-gap{height:14px}
+
+/* grafici SVG */
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;overflow:visible}
+.chart .axis text{fill:var(--ink-3);font-size:11px}
+.chart .gridl{stroke:var(--grid);stroke-width:1}
+.chart .base{stroke:var(--line);stroke-width:1}
+.chart .bar{fill:var(--series-1)}
+.chart .hit{fill:transparent;cursor:default}
+.chart .hit:hover+.bar,.chart g.col:hover .bar{fill:color-mix(in srgb,var(--series-1) 78%,var(--ink))}
+.chart g.col:hover .hl{fill:var(--surface-2)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--surface);padding:7px 10px;border-radius:8px;font-size:12px;white-space:nowrap;transform:translate(-50%,-110%);z-index:5;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.tip b{display:block;font-size:13px}
+
+/* barre orizzontali (reparti, pagamenti...) */
+.hbars{display:grid;gap:9px}
+.hb{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;gap:10px;align-items:center;font-size:13px}
+.hb .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.hb .tr{height:10px;background:var(--surface-2);border-radius:5px;overflow:hidden}
+.hb .fl{height:100%;background:var(--series-1);border-radius:0 4px 4px 0;min-width:2px}
+.hb .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+.hb .v small{color:var(--ink-3);margin-left:6px;display:inline-block;min-width:40px}
+
+/* tabelle */
+.tbl-wrap{overflow:auto;max-height:640px;border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:var(--surface);text-align:left;font-weight:500;color:var(--ink-3);font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;z-index:1}
+th.r,td.r{text-align:right}
+th.sort{cursor:pointer;user-select:none}
+th.sort:hover{color:var(--ink)}
+td{padding:8px 10px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums}
+tr:hover td{background:var(--surface-2)}
+td .minibar{height:6px;background:var(--series-1);border-radius:0 3px 3px 0;margin-top:4px;opacity:.85}
+.muted{color:var(--ink-3)}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.toolbar input[type=search]{max-width:320px}
+
+/* scontrini */
+.rc{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--surface)}
+.rc-h{display:grid;grid-template-columns:150px 1fr auto auto;gap:12px;padding:10px 14px;cursor:pointer;align-items:center}
+.rc-h:hover{background:var(--surface-2)}
+.rc-b{padding:0 14px 12px;display:none}
+.rc.open .rc-b{display:block}
+.rc-b table td{padding:5px 8px}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line)}
+
+/* admin */
+.status{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:12px;padding:3px 9px;border-radius:999px}
+.status.on{color:var(--good);background:var(--good-bg)}
+.status.off{color:var(--bad);background:var(--bad-bg)}
+.status.wait{color:var(--warn);background:var(--warn-bg)}
+.kv{display:grid;grid-template-columns:160px 1fr;gap:6px 12px;font-size:13px}
+.kv b{color:var(--ink-3);font-weight:500}
+code.copy{font-family:Consolas,ui-monospace,monospace;font-size:12px;background:var(--surface-2);border:1px solid var(--line);padding:3px 7px;border-radius:6px;cursor:pointer;word-break:break-all}
+code.copy:hover{border-color:var(--brand)}
+.empty{padding:40px;text-align:center;color:var(--ink-3)}
+.loading{opacity:.55;pointer-events:none;transition:opacity .2s}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;z-index:99;font-size:13px}
+@media (max-width:640px){
+  main{padding:12px 12px 50px}
+  .g-2{grid-template-columns:1fr}
+  .kpi .val{font-size:22px}
+  .rc-h{grid-template-columns:1fr auto}
+  .rc-h .hide-m{display:none}
+  .user{display:none}
+  .period-lbl{margin-left:0;width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<section id="login" class="hidden">
+  <form class="login-card" id="loginForm">
+    <div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><rect x="3" y="11" width="4" height="9" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="8" width="4" height="12" rx="1"/></svg></div>
+    <h1>Statistiche negozio</h1>
+    <p>Accedi per vedere il venduto</p>
+    <div class="field"><label>Email</label><input type="email" id="lEmail" autocomplete="username" required></div>
+    <div class="field"><label>Password</label><input type="password" id="lPass" autocomplete="current-password" required></div>
+    <button class="btn pri" style="width:100%;padding:11px">Accedi</button>
+    <div class="err" id="lErr"></div>
+    <div style="text-align:center;margin-top:8px"><a href="#" id="lReset" style="font-size:12px;color:var(--ink-3)">Password dimenticata?</a></div>
+  </form>
+</section>
+
+<!-- ============ APP ============ -->
+<section id="app" class="hidden">
+  <header class="top">
+    <div class="top-in">
+      <div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><rect x="3" y="11" width="4" height="9" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="8" width="4" height="12" rx="1"/></svg></div>
+      <div class="brand">Renko Retail<small>Statistiche venduto</small></div>
+      <div class="sp"></div>
+      <select id="selNegozio" aria-label="Negozio"></select>
+      <span class="user" id="userEmail"></span>
+      <button class="btn sm" id="bLogout">Esci</button>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="panoramica" class="on">Panoramica</button>
+      <button data-tab="articoli">Articoli</button>
+      <button data-tab="chiusure">Chiusure Z</button>
+      <button data-tab="scontrini">Scontrini</button>
+      <button data-tab="admin" id="tabAdmin" class="hidden">Amministrazione</button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="filters" id="filters">
+      <div class="seg" id="presets">
+        <button data-p="oggi">Oggi</button><button data-p="ieri">Ieri</button>
+        <button data-p="7g">7 giorni</button><button data-p="mese">Questo mese</button>
+        <button data-p="mesep">Mese scorso</button><button data-p="anno">Quest'anno</button>
+        <button data-p="annop">Anno scorso</button><button data-p="custom">Periodo…</button>
+      </div>
+      <div class="range hidden" id="customRange">
+        <input type="date" id="dDal"> <span class="muted">→</span> <input type="date" id="dAl">
+        <button class="btn sm pri" id="bApplica">Applica</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <span class="period-lbl" id="periodLbl"></span>
+    </div>
+
+    <div id="view"></div>
+  </main>
+</section>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+'use strict';
+/* ====================================================================
+   Accesso a Supabase senza librerie: Auth (GoTrue) + RPC (PostgREST)
+   ==================================================================== */
+const BASE = SUPABASE_URL.replace(/\/+$/,'');
+const SKEY = 'rrs_sessione';
+let sess = null;
+try { sess = JSON.parse(localStorage.getItem(SKEY)||'null'); } catch(e){}
+
+async function authCall(path, body){
+  const r = await fetch(`${BASE}/auth/v1/${path}`, {method:'POST', headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error_description || j.msg || j.message || 'Accesso non riuscito');
+  return j;
+}
+function salvaSess(j){
+  sess = {access_token:j.access_token, refresh_token:j.refresh_token, expires_at: Date.now() + (j.expires_in||3600)*1000, email:j.user?.email || sess?.email};
+  try{ localStorage.setItem(SKEY, JSON.stringify(sess)); }catch(e){}
+}
+async function login(email, pass){ salvaSess(await authCall('token?grant_type=password', {email, password:pass})); }
+async function refresh(){
+  if(!sess?.refresh_token) throw new Error('sessione scaduta');
+  salvaSess(await authCall('token?grant_type=refresh_token', {refresh_token:sess.refresh_token}));
+}
+function logout(){
+  if(sess?.access_token) fetch(`${BASE}/auth/v1/logout`,{method:'POST',headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+sess.access_token}}).catch(()=>{});
+  sess=null; try{localStorage.removeItem(SKEY);}catch(e){}
+  mostraLogin();
+}
+async function rpc(fn, args={}, retry=true){
+  if(sess && Date.now() > sess.expires_at - 60000){ try{ await refresh(); }catch(e){ logout(); throw e; } }
+  const r = await fetch(`${BASE}/rest/v1/rpc/${fn}`, {method:'POST',
+    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+(sess?.access_token||SUPABASE_KEY),'Content-Type':'application/json'},
+    body:JSON.stringify(args)});
+  if(r.status===401 && retry){ try{ await refresh(); return rpc(fn,args,false); }catch(e){ logout(); throw e; } }
+  const j = await r.json().catch(()=>null);
+  if(!r.ok) throw new Error(j?.message || ('Errore '+r.status));
+  return j;
+}
+
+/* ====================================================================
+   Utilità
+   ==================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fEur  = v => (Number(v)||0).toLocaleString('it-IT',{style:'currency',currency:'EUR'});
+const fEur0 = v => (Number(v)||0).toLocaleString('it-IT',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const fNum  = (v,d=0) => (Number(v)||0).toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fQta  = v => { const n=Number(v)||0; return Number.isInteger(n)?fNum(n):fNum(n,2); };
+const fPct  = v => (Number(v)||0).toLocaleString('it-IT',{style:'percent',maximumFractionDigits:1});
+const iso   = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const pIso  = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
+const fData = s => pIso(String(s).slice(0,10)).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+const fDataBreve = s => pIso(String(s).slice(0,10)).toLocaleDateString('it-IT',{day:'2-digit',month:'short'});
+const fOra  = s => String(s).slice(11,16);
+const GIORNI = ['','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato','Domenica'];
+const MESI = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+function toast(t){ const e=$('toast'); e.textContent=t; e.classList.remove('hidden'); clearTimeout(toast.t); toast.t=setTimeout(()=>e.classList.add('hidden'),3000); }
+function copia(t){ (navigator.clipboard?.writeText(t)||Promise.reject()).then(()=>toast('Copiato'),()=>{ prompt('Copia:',t); }); }
+function scaricaCSV(nome, righe){
+  const csv = righe.map(r=>r.map(v=>{ const s=String(v??''); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }).join(';')).join('\r\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'})); a.download=nome; a.click();
+}
+const ls = { get:(k,d)=>{ try{ const v=localStorage.getItem('rrs_'+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
+             set:(k,v)=>{ try{ localStorage.setItem('rrs_'+k,JSON.stringify(v)); }catch(e){} } };
+
+/* ====================================================================
+   Stato
+   ==================================================================== */
+const S = {
+  ctx:null, negozio:null, post:new Set(ls.get('post',[])),
+  preset: ls.get('preset','oggi'), dal:null, al:null,
+  tab: ls.get('tab','panoramica'),
+  stat:null, artSort:{k:'importo',dir:-1}, artQ:'', scQ:''
+};
+function negozio(){ return S.ctx?.negozi.find(n=>n.id===S.negozio); }
+
+function calcolaPeriodo(p){
+  const oggi=new Date(); oggi.setHours(0,0,0,0);
+  const d=new Date(oggi);
+  switch(p){
+    case 'oggi': return [oggi,oggi];
+    case 'ieri': d.setDate(d.getDate()-1); return [d,d];
+    case '7g': d.setDate(d.getDate()-6); return [d,oggi];
+    case 'mese': return [new Date(oggi.getFullYear(),oggi.getMonth(),1),oggi];
+    case 'mesep': return [new Date(oggi.getFullYear(),oggi.getMonth()-1,1),new Date(oggi.getFullYear(),oggi.getMonth(),0)];
+    case 'anno': return [new Date(oggi.getFullYear(),0,1),oggi];
+    case 'annop': return [new Date(oggi.getFullYear()-1,0,1),new Date(oggi.getFullYear()-1,11,31)];
+  }
+  return [pIso(S.dal||iso(oggi)), pIso(S.al||iso(oggi))];
+}
+function impostaPreset(p){
+  S.preset=p; ls.set('preset',p);
+  if(p!=='custom'){ const [a,b]=calcolaPeriodo(p); S.dal=iso(a); S.al=iso(b); }
+  else { S.dal = S.dal || ls.get('dal', iso(new Date())); S.al = S.al || ls.get('al', iso(new Date())); }
+  $('dDal').value=S.dal; $('dAl').value=S.al;
+  document.querySelectorAll('#presets button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+  $('customRange').classList.toggle('hidden',p!=='custom');
+}
+// periodo di confronto: stesso periodo "omologo" (non i giorni subito prima)
+function periodoConfronto(){
+  const a=pIso(S.dal), b=pIso(S.al), add=(d,n)=>{ const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+  const fineMese=(y,m)=>new Date(y,m+1,0).getDate();
+  const indietroMesi=(d,n)=>{ const y=d.getFullYear(), m=d.getMonth()-n; return new Date(y,m,Math.min(d.getDate(),fineMese(y,m))); };
+  switch(S.preset){
+    case 'oggi': case 'ieri': return [add(a,-7),add(b,-7)];                    // stesso giorno della settimana prima
+    case 'mese': case 'mesep': return [indietroMesi(a,1), indietroMesi(b,1)];  // stessi giorni del mese prima
+    case 'anno': case 'annop': return [new Date(a.getFullYear()-1,a.getMonth(),a.getDate()), new Date(b.getFullYear()-1,b.getMonth(),Math.min(b.getDate(),fineMese(b.getFullYear()-1,b.getMonth())))];
+  }
+  const n=Math.round((b-a)/864e5)+1; return [add(a,-n),add(a,-1)];
+}
+function etichettaPeriodo(){
+  if(S.dal===S.al) return pIso(S.dal).toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  return `dal ${fData(S.dal)} al ${fData(S.al)}`;
+}
+
+/* ====================================================================
+   Avvio, login
+   ==================================================================== */
+function mostraLogin(){ $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+$('loginForm').addEventListener('submit', async e=>{
+  e.preventDefault(); $('lErr').textContent='';
+  try{ await login($('lEmail').value.trim(), $('lPass').value); avvia(); }
+  catch(err){ $('lErr').textContent = /invalid/i.test(err.message)?'Email o password errati':err.message; }
+});
+$('lReset').onclick = async e=>{
+  e.preventDefault(); const em=$('lEmail').value.trim();
+  if(!em){ $('lErr').textContent='Scrivi prima la tua email'; return; }
+  try{ await authCall('recover',{email:em}); $('lErr').textContent=''; toast('Ti abbiamo inviato una mail per reimpostare la password'); }
+  catch(err){ $('lErr').textContent=err.message; }
+};
+$('bLogout').onclick = logout;
+
+async function avvia(){
+  if(SUPABASE_URL.includes('XXXXXXXX')){ document.body.innerHTML='<div class="empty">Configura SUPABASE_URL e SUPABASE_KEY in cima a index.html</div>'; return; }
+  if(!sess){ mostraLogin(); return; }
+  try{ S.ctx = await rpc('contesto'); }
+  catch(e){ mostraLogin(); $('lErr').textContent=e.message; return; }
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+  $('userEmail').textContent = S.ctx.email||'';
+  $('tabAdmin').classList.toggle('hidden', !S.ctx.superadmin);
+  const sel=$('selNegozio');
+  sel.innerHTML = S.ctx.negozi.map(n=>`<option value="${n.id}">${esc(n.nome)}</option>`).join('');
+  sel.classList.toggle('hidden', S.ctx.negozi.length<2);
+  const salvato = ls.get('negozio',null);
+  S.negozio = S.ctx.negozi.find(n=>n.id===salvato)?.id || S.ctx.negozi[0]?.id || null;
+  sel.value = S.negozio||'';
+  if(S.tab==='admin' && !S.ctx.superadmin) S.tab='panoramica';
+  impostaPreset(S.preset);
+  disegnaChips(); attivaTab(S.tab);
+}
+$('selNegozio').onchange = e=>{ S.negozio=e.target.value; ls.set('negozio',S.negozio); S.post.clear(); ls.set('post',[]); disegnaChips(); carica(); };
+
+/* filtri */
+document.querySelectorAll('#presets button').forEach(b=>b.onclick=()=>{ impostaPreset(b.dataset.p); if(b.dataset.p!=='custom') carica(); });
+$('bApplica').onclick=()=>{
+  if(!$('dDal').value||!$('dAl').value) return;
+  S.dal=$('dDal').value; S.al=$('dAl').value; if(S.dal>S.al) [S.dal,S.al]=[S.al,S.dal];
+  ls.set('dal',S.dal); ls.set('al',S.al); carica();
+};
+function disegnaChips(){
+  const n=negozio(); const box=$('chips');
+  const ps=n?.postazioni||[];
+  if(ps.length<2){ box.innerHTML=''; S.post.clear(); return; }
+  for(const id of [...S.post]) if(!ps.some(p=>p.id===id)) S.post.delete(id);
+  box.innerHTML = `<button class="chip ${S.post.size===0?'on':''}" data-id="">Tutte le postazioni</button>` +
+    ps.map(p=>`<button class="chip ${S.post.has(p.id)?'on':''}" data-id="${p.id}">${esc(p.nome)}</button>`).join('');
+  box.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+    const id=c.dataset.id;
+    if(!id) S.post.clear(); else S.post.has(id)?S.post.delete(id):S.post.add(id);
+    if(S.post.size===ps.length) S.post.clear();
+    ls.set('post',[...S.post]); disegnaChips(); carica();
+  });
+}
+
+/* tab */
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>attivaTab(b.dataset.tab));
+function attivaTab(t){
+  S.tab=t; ls.set('tab',t);
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  $('filters').classList.toggle('hidden', t==='admin');
+  carica();
+}
+
+/* ====================================================================
+   Caricamento dati
+   ==================================================================== */
+let reqN=0;
+async function carica(){
+  const v=$('view');
+  $('periodLbl').textContent = etichettaPeriodo();
+  if(!S.negozio && S.tab!=='admin'){ v.innerHTML='<div class="card empty">Nessun negozio associato al tuo utente.</div>'; return; }
+  const my=++reqN; v.classList.add('loading');
+  try{
+    if(S.tab==='admin'){ await vistaAdmin(); }
+    else if(S.tab==='scontrini'){ await vistaScontrini(my); }
+    else {
+      const [pd,pa]=periodoConfronto();
+      const st = await rpc('statistiche',{p_negozio:S.negozio,p_postazioni:[...S.post],p_dal:S.dal,p_al:S.al,p_prec_dal:iso(pd),p_prec_al:iso(pa)});
+      if(my!==reqN) return; S.stat=st;
+      if(S.tab==='panoramica') vistaPanoramica(st);
+      else if(S.tab==='articoli') vistaArticoli(st);
+      else if(S.tab==='chiusure') vistaChiusure(st);
+    }
+  }catch(e){ if(my===reqN) v.innerHTML=`<div class="card empty">Errore: ${esc(e.message)}</div>`; }
+  finally{ if(my===reqN) v.classList.remove('loading'); }
+}
+
+/* ====================================================================
+   Grafici SVG (barre verticali, una serie, tooltip al passaggio)
+   ==================================================================== */
+function scalaNice(max){
+  if(max<=0) return {top:1,step:.25};
+  const raw=max/4, p=Math.pow(10,Math.floor(Math.log10(raw))), m=raw/p;
+  const step=(m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p;
+  return {top:Math.ceil(max/step)*step, step};
+}
+function fAsse(v){ return v>=1000 ? (v/1000).toLocaleString('it-IT',{maximumFractionDigits:1})+'k' : v.toLocaleString('it-IT',{maximumFractionDigits:2}); }
+
+function barChart(el, dati, {h=220, fmt=fEur, tip, evid=null}={}){
+  // dati: [{x:'etichetta asse', v:numero, t:'titolo tooltip', extra:'riga 2'}]
+  el.innerHTML=''; el.classList.add('chart');
+  const W = Math.max(el.clientWidth||600, 260), padL=46, padR=6, padT=8, padB=24;
+  const iw=W-padL-padR, ih=h-padT-padB, n=dati.length||1, band=iw/n;
+  const max=Math.max(0,...dati.map(d=>d.v)); const {top,step}=scalaNice(max);
+  const y=v=>padT+ih-(v/top)*ih;
+  const bw=Math.max(2,Math.min(28,band*0.62));
+  const ogni=Math.ceil(n/Math.max(1,Math.floor(iw/46)));
+  let s=`<svg viewBox="0 0 ${W} ${h}" height="${h}" role="img"><g class="axis">`;
+  for(let t=0;t<=top+1e-9;t+=step){ s+=`<line class="gridl" x1="${padL}" x2="${W-padR}" y1="${y(t)}" y2="${y(t)}"/><text x="${padL-8}" y="${y(t)+4}" text-anchor="end">${fAsse(t)}</text>`; }
+  dati.forEach((d,i)=>{ if(i%ogni===0) s+=`<text x="${padL+band*i+band/2}" y="${h-6}" text-anchor="middle">${esc(d.x)}</text>`; });
+  s+=`</g>`;
+  dati.forEach((d,i)=>{
+    const cx=padL+band*i+band/2, x=cx-bw/2, yy=y(Math.max(0,d.v)), hh=padT+ih-yy, r=Math.min(4,bw/2,hh);
+    const path = hh<=0 ? '' : `M${x},${padT+ih} V${yy+r} Q${x},${yy} ${x+r},${yy} H${x+bw-r} Q${x+bw},${yy} ${x+bw},${yy+r} V${padT+ih} Z`;
+    s+=`<g class="col" data-i="${i}"><rect class="hl" x="${padL+band*i}" y="${padT}" width="${band}" height="${ih}" fill="transparent"/>`+
+       (path?`<path class="bar" d="${path}"${evid!=null&&evid!==i?' style="opacity:.55"':''}/>`:'')+`</g>`;
+  });
+  s+=`<line class="base" x1="${padL}" x2="${W-padR}" y1="${padT+ih}" y2="${padT+ih}"/></svg>`;
+  el.innerHTML=s;
+  const tipEl=document.createElement('div'); tipEl.className='tip hidden'; el.appendChild(tipEl);
+  el.querySelectorAll('g.col').forEach(g=>{
+    g.addEventListener('mouseenter',()=>{
+      const d=dati[+g.dataset.i]; const cx=padL+band*(+g.dataset.i)+band/2;
+      tipEl.innerHTML=`<span>${esc(d.t||d.x)}</span><b>${fmt(d.v)}</b>${d.extra?`<span>${esc(d.extra)}</span>`:''}`;
+      const rect=el.getBoundingClientRect(), sc=rect.width/W;
+      tipEl.style.left=Math.min(Math.max(cx*sc,70),rect.width-70)+'px'; tipEl.style.top=(y(Math.max(0,d.v))*sc)+'px';
+      tipEl.classList.remove('hidden');
+    });
+    g.addEventListener('mouseleave',()=>tipEl.classList.add('hidden'));
+  });
+}
+function hbars(lista, {lbl, val, fmt=fEur, tot}){
+  if(!lista.length) return '<div class="muted">Nessun dato</div>';
+  const max=Math.max(...lista.map(val)); const T=tot ?? lista.reduce((a,b)=>a+val(b),0);
+  return '<div class="hbars">'+lista.map(o=>`<div class="hb" title="${esc(lbl(o))}"><span class="nm">${esc(lbl(o))}</span>
+    <span class="tr"><span class="fl" style="display:block;width:${max>0?Math.max(0,val(o))/max*100:0}%"></span></span>
+    <span class="v">${fmt(val(o))}<small>${T>0?fPct(val(o)/T):''}</small></span></div>`).join('')+'</div>';
+}
+function delta(cur, prev){
+  if(!prev) return `<span class="delta flat">—</span>`;
+  const d=(cur-prev)/Math.abs(prev);
+  if(Math.abs(d)<0.005) return `<span class="delta flat">= 0%</span>`;
+  return `<span class="delta ${d>0?'up':'down'}" title="${d>0?'In aumento':'In calo'}">${d>0?'▲':'▼'} ${fPct(Math.abs(d))}</span>`;
+}
+
+/* ====================================================================
+   Vista: Panoramica
+   ==================================================================== */
+function raggruppaAndamento(giorni){
+  const n=giorni.length;
+  if(n<=62) return {titolo:'Incasso per giorno', dati:giorni.map(g=>({x:fDataBreve(g.g), v:+g.incasso, t:pIso(g.g).toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'long'}), extra:`${fNum(g.scontrini)} scontrini`}))};
+  const perMese = n>190;
+  const m=new Map();
+  giorni.forEach(g=>{
+    const d=pIso(g.g); let k,lab,t;
+    if(perMese){ k=`${d.getFullYear()}-${d.getMonth()}`; lab=`${MESI[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`; t=d.toLocaleDateString('it-IT',{month:'long',year:'numeric'}); }
+    else { const l=new Date(d); l.setDate(d.getDate()-((d.getDay()+6)%7)); k=iso(l); lab=fDataBreve(k); t='Settimana dal '+fData(k); }
+    const o=m.get(k)||{x:lab,v:0,t,n:0}; o.v+=+g.incasso; o.n+=g.scontrini; m.set(k,o);
+  });
+  return {titolo: perMese?'Incasso per mese':'Incasso per settimana', dati:[...m.values()].map(o=>({...o,extra:`${fNum(o.n)} scontrini`}))};
+}
+function vistaPanoramica(st){
+  const k=st.kpi, p=st.kpi_prec, v=$('view');
+  const P=st.periodo, prevLbl = P.prec_dal===P.prec_al ? `vs ${pIso(P.prec_dal).toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'})}`
+        : `vs ${fDataBreve(P.prec_dal)}–${fDataBreve(P.prec_al)}${String(P.prec_dal).slice(0,4)!==String(S.dal).slice(0,4)?' '+String(P.prec_al).slice(0,4):''}`;
+  if(!k.scontrini){
+    v.innerHTML=`<div class="card empty">Nessuno scontrino nel periodo selezionato.<br><span class="muted">Periodo di confronto: ${fEur(p.incasso)} · ${fNum(p.scontrini)} scontrini</span></div>`; return;
+  }
+  const and=raggruppaAndamento(st.giorni);
+  const totRep=st.reparti.reduce((a,b)=>a+(+b.importo),0);
+  const settimana=[1,2,3,4,5,6,7].map(d=>{ const o=st.settimana.find(x=>x.dow===d); return {x:GIORNI[d].slice(0,3), v:o&&o.giorni?o.incasso/o.giorni:0, t:GIORNI[d], extra:o?`media su ${o.giorni} giorni · ${fNum(o.scontrini)} scontrini`:'nessun dato'}; });
+  const oreMin=Math.min(...st.ore.map(o=>o.h)), oreMax=Math.max(...st.ore.map(o=>o.h));
+  const ore=[]; for(let h=oreMin;h<=oreMax;h++){ const o=st.ore.find(x=>x.h===h); ore.push({x:String(h).padStart(2,'0'), v:o?+o.incasso:0, t:`${String(h).padStart(2,'0')}:00 – ${String(h).padStart(2,'0')}:59`, extra:o?`${fNum(o.scontrini)} scontrini`:''}); }
+  v.innerHTML=`
+  <div class="grid g-kpi">
+    <div class="card kpi"><div class="lbl">Incasso</div><div class="val num">${fEur(k.incasso)}</div><div class="cmp">${delta(k.incasso,p.incasso)}<span title="${fEur(p.incasso)}">${prevLbl}</span></div></div>
+    <div class="card kpi"><div class="lbl">Scontrini</div><div class="val num">${fNum(k.scontrini)}</div><div class="cmp">${delta(k.scontrini,p.scontrini)}<span>${fNum(p.scontrini)} prima</span></div></div>
+    <div class="card kpi"><div class="lbl">Scontrino medio</div><div class="val num">${fEur(k.medio)}</div><div class="cmp">${delta(k.medio,p.medio)}<span>${fEur(p.medio)} prima</span></div></div>
+    <div class="card kpi"><div class="lbl">Pezzi venduti</div><div class="val num">${fQta(k.pezzi)}</div><div class="cmp">${delta(k.pezzi,p.pezzi)}<span>${fQta(p.pezzi)} prima</span></div></div>
+    <div class="card kpi"><div class="lbl">Sconti</div><div class="val num">${fEur(Math.abs(k.sconti))}</div><div class="cmp"><span>${k.lordo?fPct(Math.abs(k.sconti)/k.lordo):'0%'} del venduto lordo</span></div></div>
+  </div>
+  <div class="section-gap"></div>
+  ${st.giorni.length>1?`<div class="card"><div class="card-head"><div><h3>${and.titolo}</h3><div class="sub">${fNum(k.giorni_aperti)} giorni con vendite · media ${fEur(k.incasso/Math.max(1,k.giorni_aperti))} al giorno</div></div></div><div id="chAnd"></div></div><div class="section-gap"></div>`:''}
+  <div class="grid g-2">
+    <div class="card"><h3>Fasce orarie</h3><div class="sub">Incasso per ora di emissione dello scontrino</div><div id="chOre"></div></div>
+    ${st.giorni.length>=7?`<div class="card"><h3>Giorni della settimana</h3><div class="sub">Incasso medio per giorno di apertura</div><div id="chSett"></div></div>`:''}
+    <div class="card"><h3>Reparti</h3><div class="sub">Venduto netto (dopo sconti)</div>${hbars(st.reparti,{lbl:o=>o.reparto,val:o=>+o.importo,tot:totRep})}</div>
+    <div class="card"><h3>Pagamenti</h3><div class="sub">Incassato per tipo di pagamento</div>${hbars(st.pagamenti,{lbl:o=>`${o.pagamento} (${fNum(o.n)})`,val:o=>+o.importo})}</div>
+    <div class="card"><div class="card-head"><div><h3>Articoli più venduti</h3><div class="sub">Primi 10 per incasso</div></div><button class="btn sm" onclick="attivaTab('articoli')">Tutti</button></div>
+      ${hbars(st.articoli.slice(0,10),{lbl:o=>`${o.articolo||'(senza descrizione)'} · ${fQta(o.quantita)} pz`,val:o=>+o.importo,tot:totRep})}</div>
+    ${st.postazioni.length>1?`<div class="card"><h3>Postazioni</h3><div class="sub">Incasso per cassa</div>${hbars(st.postazioni,{lbl:o=>`${o.postazione} (${fNum(o.scontrini)})`,val:o=>+o.incasso})}</div>`:''}
+    <div class="card"><h3>IVA</h3><div class="sub">Scorporo sul venduto netto</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Aliquota</th><th class="r">Imponibile</th><th class="r">Imposta</th><th class="r">Totale</th></tr></thead><tbody>
+      ${st.iva.map(i=>`<tr><td>${fNum(i.aliquota,0)}%</td><td class="r">${fEur(i.imponibile)}</td><td class="r">${fEur(i.imposta)}</td><td class="r">${fEur(i.totale)}</td></tr>`).join('')}
+      <tr><td><b>Totale</b></td><td class="r"><b>${fEur(st.iva.reduce((a,b)=>a+ +b.imponibile,0))}</b></td><td class="r"><b>${fEur(st.iva.reduce((a,b)=>a+ +b.imposta,0))}</b></td><td class="r"><b>${fEur(st.iva.reduce((a,b)=>a+ +b.totale,0))}</b></td></tr>
+      </tbody></table></div></div>
+    ${st.operatori.length>1?`<div class="card"><h3>Operatori</h3><div class="sub">Incasso per operatore</div>${hbars(st.operatori,{lbl:o=>`${o.operatore} (${fNum(o.scontrini)})`,val:o=>+o.incasso})}</div>`:''}
+  </div>`;
+  const draw=()=>{
+    if($('chAnd')) barChart($('chAnd'), and.dati, {h:240});
+    barChart($('chOre'), ore, {h:200});
+    if($('chSett')) barChart($('chSett'), settimana, {h:200});
+  };
+  draw(); window.onresize=()=>{ clearTimeout(draw.t); draw.t=setTimeout(()=>S.tab==='panoramica'&&draw(),150); };
+}
+
+/* ====================================================================
+   Vista: Articoli
+   ==================================================================== */
+function vistaArticoli(st){
+  const v=$('view'); window.onresize=null;
+  v.innerHTML=`<div class="card">
+    <div class="toolbar"><input type="search" id="artQ" placeholder="Cerca articolo, codice o reparto…" value="${esc(S.artQ)}">
+      <span class="muted" id="artN"></span><span class="sp" style="flex:1"></span><button class="btn sm" id="artCsv">Esporta CSV</button></div>
+    <div class="tbl-wrap"><table><thead><tr>
+      <th class="sort" data-k="articolo">Articolo</th><th class="sort" data-k="reparto">Reparto</th>
+      <th class="sort r" data-k="quantita">Quantità</th><th class="sort r" data-k="sconti">Sconti</th>
+      <th class="sort r" data-k="importo">Incasso netto</th><th class="r">Quota</th></tr></thead><tbody id="artBody"></tbody></table></div>
+    <div class="sub" style="margin-top:8px">Sono mostrati al massimo i 500 articoli con più incasso nel periodo.</div></div>`;
+  const tot=st.articoli.reduce((a,b)=>a+ +b.importo,0);
+  const disegna=()=>{
+    const q=S.artQ.toLowerCase(), {k,dir}=S.artSort;
+    let l=st.articoli.filter(a=>!q||[a.articolo,a.cod,a.reparto].some(x=>String(x||'').toLowerCase().includes(q)));
+    l.sort((a,b)=>{ const x=a[k],y=b[k]; return (typeof x==='string'||typeof y==='string'?String(x||'').localeCompare(String(y||'')):(+x)-(+y))*dir; });
+    const max=Math.max(1,...l.map(a=>+a.importo));
+    $('artN').textContent=`${fNum(l.length)} articoli`;
+    $('artBody').innerHTML=l.map(a=>`<tr><td>${esc(a.articolo||'(senza descrizione)')}<div class="muted" style="font-size:11px">${esc(a.cod||'')}</div></td><td>${esc(a.reparto||'')}</td>
+      <td class="r">${fQta(a.quantita)}</td><td class="r">${+a.sconti?fEur(a.sconti):'<span class="muted">—</span>'}</td>
+      <td class="r">${fEur(a.importo)}<div class="minibar" style="width:${Math.max(0,+a.importo)/max*100}%;margin-left:auto"></div></td><td class="r muted">${tot?fPct(a.importo/tot):''}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Nessun articolo</td></tr>';
+    document.querySelectorAll('th.sort').forEach(t=>{ t.textContent=t.textContent.replace(/ [▲▼]$/,''); if(t.dataset.k===k) t.textContent+=dir>0?' ▲':' ▼'; });
+  };
+  $('artQ').oninput=e=>{ S.artQ=e.target.value; disegna(); };
+  document.querySelectorAll('th.sort').forEach(t=>t.onclick=()=>{ const k=t.dataset.k; S.artSort = S.artSort.k===k?{k,dir:-S.artSort.dir}:{k,dir:(k==='articolo'||k==='reparto')?1:-1}; disegna(); });
+  $('artCsv').onclick=()=>scaricaCSV(`articoli_${S.dal}_${S.al}.csv`,[['Codice','Articolo','Reparto','Quantita','Sconti','Incasso netto'],
+    ...st.articoli.map(a=>[a.cod,a.articolo,a.reparto,fQta(a.quantita),fNum(a.sconti,2),fNum(a.importo,2)])]);
+  disegna();
+}
+
+/* ====================================================================
+   Vista: Chiusure Z
+   ==================================================================== */
+function vistaChiusure(st){
+  const v=$('view'); window.onresize=null;
+  const z=st.chiusure, tot=z.reduce((a,b)=>a+ +b.incasso,0);
+  const multi=(negozio()?.postazioni||[]).length>1;
+  v.innerHTML=`<div class="card">
+    <div class="toolbar"><div><h3 style="margin:0">Chiusure giornaliere (Z)</h3><div class="sub" style="margin:0">Ricavate dal riferimento RT di ogni scontrino · ${fNum(z.length)} chiusure · ${fEur(tot)}</div></div>
+    <span style="flex:1"></span><button class="btn sm" id="zCsv">Esporta CSV</button></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Z n.</th>${multi?'<th>Postazione</th>':''}<th>Matricola RT</th><th>Orario</th><th class="r">Scontrini</th><th class="r">Incasso</th><th class="r">Medio</th></tr></thead><tbody>
+    ${z.map(c=>`<tr><td>${pIso(c.giorno).toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'})}</td><td><b>${c.z}</b></td>${multi?`<td>${esc(c.postazione)}</td>`:''}<td class="muted">${esc(c.matricola)}</td>
+      <td class="muted">${fOra(c.dalle)} – ${fOra(c.alle)}</td><td class="r">${fNum(c.scontrini)}</td><td class="r"><b>${fEur(c.incasso)}</b></td><td class="r muted">${fEur(c.incasso/c.scontrini)}</td></tr>`).join('') || `<tr><td colspan="8" class="empty">Nessuna chiusura nel periodo</td></tr>`}
+    </tbody></table></div></div>`;
+  $('zCsv').onclick=()=>scaricaCSV(`chiusure_${S.dal}_${S.al}.csv`,[['Data','Z','Postazione','Matricola','Dalle','Alle','Scontrini','Incasso'],
+    ...z.map(c=>[fData(c.giorno),c.z,c.postazione,c.matricola,fOra(c.dalle),fOra(c.alle),c.scontrini,fNum(c.incasso,2)])]);
+}
+
+/* ====================================================================
+   Vista: Scontrini
+   ==================================================================== */
+async function vistaScontrini(my){
+  const v=$('view'); window.onresize=null;
+  if(!$('scBody')){
+    v.innerHTML=`<div class="card"><div class="toolbar"><input type="search" id="scQ" placeholder="Cerca per articolo, codice o riferimento RT…" value="${esc(S.scQ)}">
+      <button class="btn sm pri" id="scGo">Cerca</button><span class="muted" id="scN"></span></div><div id="scBody"></div></div>`;
+    const go=()=>{ S.scQ=$('scQ').value.trim(); carica(); };
+    $('scGo').onclick=go; $('scQ').onkeydown=e=>{ if(e.key==='Enter') go(); };
+  }
+  const l=await rpc('scontrini_lista',{p_negozio:S.negozio,p_postazioni:[...S.post],p_dal:S.dal,p_al:S.al,p_cerca:S.scQ||null,p_limit:300});
+  if(my!==reqN) return;
+  $('scN').textContent = l.length>=300?'Mostrati gli ultimi 300: restringi il periodo o cerca':`${fNum(l.length)} scontrini`;
+  $('scBody').innerHTML = l.map(s=>{
+    const vend=(s.righe||[]).filter(r=>r.tipo!==11), pag=(s.righe||[]).filter(r=>r.tipo===11);
+    return `<div class="rc"><div class="rc-h"><span><b>${fData(s.dataora)}</b> <span class="muted">${fOra(s.dataora)}</span></span>
+      <span class="hide-m muted">${s.z!=null?`Z ${s.z} · doc ${s.doc}`:'<span class="tag">non fiscale</span>'} · ${esc(s.postazione)} · ${esc(s.operatore||'')}</span>
+      <span class="hide-m muted">${fQta(s.pezzi)} pz</span><b class="num">${fEur(s.incasso)}</b></div>
+      <div class="rc-b"><table><tbody>
+      ${vend.map(r=>`<tr><td>${r.tipo===1?esc(r.articolo||''):`<span class="muted">Sconto ${esc(r.articolo||'')}</span>`}</td><td class="muted">${esc(r.reparto||'')}</td><td class="r">${r.tipo===1?fQta(r.quantita):''}</td><td class="r">${fEur(r.importo)}</td></tr>`).join('')}
+      ${pag.map(r=>`<tr><td colspan="3"><b>${esc(r.pagamento||'Pagamento')}</b></td><td class="r"><b>${fEur(r.importo)}</b></td></tr>`).join('')}
+      </tbody></table><div class="muted" style="font-size:12px;margin-top:6px">${s.rifrt?'Rif. RT '+esc(s.rifrt):''}</div></div></div>`;
+  }).join('') || '<div class="empty">Nessuno scontrino</div>';
+  $('scBody').querySelectorAll('.rc-h').forEach(h=>h.onclick=()=>h.parentElement.classList.toggle('open'));
+}
+
+/* ====================================================================
+   Vista: Amministrazione
+   ==================================================================== */
+function statoSpooler(sp){
+  if(!sp.ultimo_contatto) return `<span class="status wait">● Mai collegato</span>`;
+  const min=(Date.now()-new Date(sp.ultimo_contatto))/60000;
+  if(sp.ultimo_errore) return `<span class="status off">⚠ Errore</span>`;
+  if(min<=10) return `<span class="status on">● Online</span>`;
+  const t = min<120?`${Math.round(min)} min`: min<2880?`${Math.round(min/60)} ore`:`${Math.round(min/1440)} giorni`;
+  return `<span class="status off">○ Non risponde da ${t}</span>`;
+}
+const fDT = s => s ? new Date(s).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+
+async function vistaAdmin(){
+  window.onresize=null;
+  const [ctx, utenti] = await Promise.all([rpc('contesto'), rpc('utenti_lista')]);
+  S.ctx=ctx;
+  const v=$('view');
+  v.innerHTML=`
+  <div class="card"><div class="card-head"><div><h3>Dati per lo spooler</h3><div class="sub">Da copiare nelle impostazioni dello spooler sul PC del negozio (clic per copiare)</div></div></div>
+    <div class="kv"><b>URL Supabase</b><span><code class="copy" data-c="${esc(BASE)}">${esc(BASE)}</code></span>
+    <b>Chiave anon</b><span><code class="copy" data-c="${esc(SUPABASE_KEY)}">${esc(SUPABASE_KEY.slice(0,24))}…</code></span>
+    <b>Sito</b><span><code class="copy" data-c="${esc(location.origin+location.pathname)}">${esc(location.origin+location.pathname)}</code></span></div></div>
+  <div class="section-gap"></div>
+  <div class="toolbar"><h3 style="margin:0">Negozi</h3><span style="flex:1"></span><input type="text" id="nNome" placeholder="Nome nuovo negozio" style="max-width:260px"><button class="btn pri sm" id="nAdd">Aggiungi negozio</button></div>
+  <div class="grid">
+  ${ctx.negozi.map(n=>`<div class="card">
+    <div class="card-head"><div><h3>${esc(n.nome)}</h3><div class="sub">${n.primo_giorno?`Dati dal ${fData(n.primo_giorno)} al ${fData(n.ultimo_giorno)}`:'Nessun dato ancora'}</div></div>
+      <button class="btn sm" data-ren="${n.id}" data-nome="${esc(n.nome)}">Rinomina</button><button class="btn sm danger" data-del="${n.id}" data-nome="${esc(n.nome)}">Elimina</button></div>
+    <div class="kv"><b>Chiave negozio</b><span><code class="copy" data-c="${n.chiave}">${n.chiave}</code> <button class="btn sm" data-key="${n.id}">Rigenera</button></span></div>
+    <h3 style="margin:16px 0 8px;font-size:13px">Spooler collegati</h3>
+    ${n.spooler.length?`<div class="tbl-wrap"><table><thead><tr><th>Stato</th><th>PC</th><th>Database</th><th>Ultimo contatto</th><th>Ultimo scontrino</th><th>Vers.</th><th></th></tr></thead><tbody>
+      ${n.spooler.map(sp=>`<tr><td>${statoSpooler(sp)}${sp.ultimo_errore?`<div style="color:var(--bad);font-size:12px;max-width:320px;white-space:normal">${esc(sp.ultimo_errore)}</div>`:''}</td>
+        <td>${esc(sp.pc_nome||'')}</td><td class="muted" style="font-size:12px;max-width:260px;word-break:break-all">${esc(sp.db_path||'')}</td>
+        <td>${fDT(sp.ultimo_contatto)}</td><td>${sp.ultimo_scontrino?fData(sp.ultimo_scontrino)+' '+fOra(sp.ultimo_scontrino):'—'}</td><td class="muted">${esc(sp.versione||'')}</td>
+        <td><button class="btn sm danger" data-delsp="${sp.id}" data-pc="${esc(sp.pc_nome||'')}">Elimina dati</button></td></tr>`).join('')}
+      </tbody></table></div>`:'<div class="muted">Nessuno spooler ha ancora inviato dati con questa chiave.</div>'}
+    <h3 style="margin:16px 0 8px;font-size:13px">Postazioni</h3>
+    ${n.postazioni.length?`<div class="chips">${n.postazioni.map(p=>`<span class="chip">${esc(p.nome)} <a href="#" data-delpos="${p.id}" title="Elimina postazione vuota" style="color:var(--ink-3);text-decoration:none;margin-left:4px">×</a></span>`).join('')}</div>
+      <div class="sub" style="margin-top:6px">Il nome della postazione si imposta nello spooler sul PC del negozio.</div>`:'<div class="muted">Le postazioni compaiono al primo invio dello spooler.</div>'}
+  </div>`).join('')}
+  </div>
+  <div class="section-gap"></div>
+  <div class="card"><div class="card-head"><div><h3>Utenti</h3><div class="sub">Crea l'utente in Supabase › Authentication › Users, poi abilitalo qui ai negozi che può vedere</div></div></div>
+    <div class="toolbar"><input type="email" id="uEmail" placeholder="email utente" style="max-width:260px">
+      <select id="uNeg" style="max-width:240px">${ctx.negozi.map(n=>`<option value="${n.id}">${esc(n.nome)}</option>`).join('')}</select>
+      <button class="btn pri sm" id="uAdd">Abilita</button></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Email</th>${ctx.negozi.map(n=>`<th>${esc(n.nome)}</th>`).join('')}</tr></thead><tbody>
+    ${utenti.map(u=>`<tr><td>${esc(u.email)} ${u.superadmin?'<span class="tag">amministratore</span>':''}</td>
+      ${ctx.negozi.map(n=>`<td>${u.superadmin?'<span class="muted">tutti</span>':`<input type="checkbox" data-u="${esc(u.email)}" data-n="${n.id}" ${u.negozi.includes(n.id)?'checked':''}>`}</td>`).join('')}</tr>`).join('')}
+    </tbody></table></div></div>`;
+
+  const run = async (fn, ok)=>{ try{ await fn(); toast(ok); vistaAdmin(); avviaSelNegozi(); }catch(e){ toast(e.message); } };
+  v.querySelectorAll('code.copy').forEach(c=>c.onclick=()=>copia(c.dataset.c));
+  $('nAdd').onclick=()=>{ const nm=$('nNome').value.trim(); if(nm) run(()=>rpc('negozio_salva',{p_id:null,p_nome:nm}),'Negozio creato'); };
+  v.querySelectorAll('[data-ren]').forEach(b=>b.onclick=()=>{ const nm=prompt('Nuovo nome',b.dataset.nome); if(nm&&nm.trim()) run(()=>rpc('negozio_salva',{p_id:b.dataset.ren,p_nome:nm}),'Rinominato'); });
+  v.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ if(prompt(`Eliminare "${b.dataset.nome}" e TUTTI i suoi dati? Scrivi ELIMINA per confermare`)==='ELIMINA') run(()=>rpc('negozio_elimina',{p_id:b.dataset.del}),'Negozio eliminato'); });
+  v.querySelectorAll('[data-key]').forEach(b=>b.onclick=()=>{ if(confirm('Rigenerare la chiave? Gli spooler con la vecchia chiave smetteranno di inviare finché non inserisci la nuova.')) run(()=>rpc('negozio_nuova_chiave',{p_id:b.dataset.key}),'Nuova chiave generata'); });
+  v.querySelectorAll('[data-delsp]').forEach(b=>b.onclick=()=>{ if(confirm(`Eliminare tutti gli scontrini inviati dallo spooler ${b.dataset.pc}? Se lo spooler è ancora attivo li reinvierà da capo.`)) run(()=>rpc('spooler_elimina',{p_id:b.dataset.delsp}),'Dati eliminati'); });
+  v.querySelectorAll('[data-delpos]').forEach(a=>a.onclick=e=>{ e.preventDefault(); run(()=>rpc('postazione_elimina',{p_id:a.dataset.delpos}),'Postazione eliminata'); });
+  $('uAdd').onclick=()=>{ const em=$('uEmail').value.trim(); if(em) run(()=>rpc('utente_negozio',{p_email:em,p_negozio:$('uNeg').value,p_attivo:true}),'Utente abilitato'); };
+  v.querySelectorAll('input[data-u]').forEach(c=>c.onchange=()=>run(()=>rpc('utente_negozio',{p_email:c.dataset.u,p_negozio:c.dataset.n,p_attivo:c.checked}),c.checked?'Abilitato':'Rimosso'));
+}
+function avviaSelNegozi(){
+  const sel=$('selNegozio'); sel.innerHTML=S.ctx.negozi.map(n=>`<option value="${n.id}">${esc(n.nome)}</option>`).join('');
+  if(!S.ctx.negozi.some(n=>n.id===S.negozio)) S.negozio=S.ctx.negozi[0]?.id||null;
+  sel.value=S.negozio||''; sel.classList.toggle('hidden',S.ctx.negozi.length<2); disegnaChips();
+}
+
+/* aggiornamento automatico ogni 2 minuti se il periodo include oggi */
+setInterval(()=>{ if(!document.hidden && S.ctx && S.tab==='panoramica' && S.al>=iso(new Date())) carica(); }, 120000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && S.ctx && S.preset!=='custom'){ const a=S.al; impostaPreset(S.preset); if(a!==S.al) carica(); } });
+
+avvia();
+</script>
+</body>
+</html>
